@@ -1,0 +1,19 @@
+{
+  "name": "qr-scanner-app",
+  "version": "1.0.0",
+  "description": "Simple QR code scanner using ZXing JS",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 3000 -o",
+    "dev": "npx http-server -p 3000 -o"
+  },
+  "dependencies": {
+    "@zxing/library": "^0.21.3"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": ["qr", "scanner", "zxing", "camera"],
+  "author": "",
+  "license": "MIT"
+}
