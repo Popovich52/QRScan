@@ -2,9 +2,15 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="QR Code Scanner - сканирование QR-кодов с помощью камеры">
+    
+    <!-- iOS Safari specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QR Scanner">
+    <meta name="format-detection" content="telephone=no">
     <title>QR Code Scanner</title>
     <link rel="stylesheet" href="style.css">
     
@@ -23,7 +29,7 @@
 
         <main>
             <div class="scanner-container">
-                <video id="video" autoplay muted playsinline webkit-playsinline></video>
+                <video id="video" autoplay muted playsinline webkit-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="true"></video>
                 <canvas id="canvas" style="display: none;"></canvas>
                 
                 <div class="controls">
