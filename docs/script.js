@@ -14,7 +14,16 @@ class QRScanner {
     }
 
     detectMobile() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const userAgent = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        const isAndroid = /Android/i.test(userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+        
+        // Сохраняем информацию о типе устройства
+        this.isIOS = isIOS;
+        this.isAndroid = isAndroid;
+        
+        return isMobile;
     }
 
     initializeElements() {
@@ -45,6 +54,19 @@ class QRScanner {
         this.copyBtn.addEventListener('click', () => this.copyResult());
         this.clearBtn.addEventListener('click', () => this.clearResult());
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
+        
+        // iOS специфичные обработчики событий
+        if (this.isIOS) {
+            // Предотвращаем зум при двойном тапе
+            document.addEventListener('gesturestart', (e) => e.preventDefault());
+            document.addEventListener('gesturechange', (e) => e.preventDefault());
+            document.addEventListener('gestureend', (e) => e.preventDefault());
+            
+            // Улучшенная обработка касаний для iOS
+            this.video.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+        }
     }
 
     async checkCameraSupport() {
@@ -80,13 +102,24 @@ class QRScanner {
     async requestCameraAndStart() {
         try {
             // Сначала запрашиваем разрешение на камеру
-            const constraints = {
+            let constraints = {
                 video: {
                     facingMode: this.isMobile ? { ideal: 'environment' } : 'user', // Предпочитаем заднюю камеру на мобильном
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 }
             };
+
+            // Для iOS добавляем дополнительные ограничения
+            if (this.isIOS) {
+                constraints.video = {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 },
+                    frameRate: { ideal: 30, max: 30 }
+                };
+                console.log('iOS device detected, using optimized constraints');
+            }
 
             const permissionStream = await navigator.mediaDevices.getUserMedia(constraints);
             
@@ -103,12 +136,25 @@ class QRScanner {
             // Если не удалось получить заднюю камеру, пробуем любую доступную
             if (this.isMobile && error.name === 'OverconstrainedError') {
                 try {
-                    const fallbackConstraints = {
-                        video: {
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    };
+                    let fallbackConstraints;
+                    
+                    if (this.isIOS) {
+                        // Для iOS используем минимальные ограничения
+                        fallbackConstraints = {
+                            video: {
+                                width: { ideal: 640 },
+                                height: { ideal: 480 }
+                            }
+                        };
+                        console.log('Using iOS fallback constraints');
+                    } else {
+                        fallbackConstraints = {
+                            video: {
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            }
+                        };
+                    }
                     
                     const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
                     fallbackStream.getTracks().forEach(track => track.stop());
@@ -173,6 +219,11 @@ class QRScanner {
                     if (label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('facing back')) {
                         backCameraId = device.deviceId;
                         console.log('Found back camera:', device.label);
+                    }
+                    // Для iOS также ищем камеры с номерами (обычно 0 - фронтальная, 1 - задняя)
+                    if (this.isIOS && (label.includes('camera 1') || label.includes('camera2') || label.includes('1:'))) {
+                        backCameraId = device.deviceId;
+                        console.log('Found likely back camera on iOS:', device.label);
                     }
                 }
                 
@@ -250,6 +301,15 @@ class QRScanner {
                     }
                 }
             );
+
+            // Для iOS добавляем обработчик загрузки видео
+            if (this.isIOS) {
+                this.video.addEventListener('loadedmetadata', () => {
+                    console.log('iOS video metadata loaded');
+                    // Принудительно запускаем воспроизведение на iOS
+                    this.video.play().catch(e => console.warn('Video play failed:', e));
+                });
+            }
 
         } catch (error) {
             console.error('Ошибка при запуске сканирования:', error);
