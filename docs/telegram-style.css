@@ -186,6 +186,13 @@ main {
     color: var(--tg-theme-text-color, white);
 }
 
+.btn-info {
+    background: var(--tg-theme-link-color, #17a2b8);
+    color: white;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
 .btn-success {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
