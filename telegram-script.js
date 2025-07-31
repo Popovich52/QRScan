@@ -61,6 +61,7 @@ class TelegramQRScanner {
         this.stopBtn = document.getElementById('stopBtn');
         this.switchCameraBtn = document.getElementById('switchCameraBtn');
         this.cameraSelect = document.getElementById('cameraSelect');
+        this.testWebhookBtn = document.getElementById('testWebhookBtn');
         
         // Payment modal elements
         this.paymentModal = document.getElementById('paymentModal');
@@ -75,6 +76,7 @@ class TelegramQRScanner {
         this.startBtn.addEventListener('click', () => this.requestCameraAndStart());
         this.stopBtn.addEventListener('click', () => this.closeApp());
         this.switchCameraBtn.addEventListener('click', () => this.switchCamera());
+        this.testWebhookBtn.addEventListener('click', () => this.testWebhook());
         this.cameraSelect.addEventListener('change', (e) => {
             this.selectedDeviceId = e.target.value;
             if (this.isScanning) {
@@ -114,6 +116,9 @@ class TelegramQRScanner {
                 return;
             }
 
+            // Проверяем доступность webhook (необязательно, но полезно для диагностики)
+            this.checkWebhookAvailability();
+
             // Загружаем список камер
             await this.loadCameras();
             
@@ -128,6 +133,28 @@ class TelegramQRScanner {
         } catch (error) {
             console.error('Camera support check failed:', error);
             this.showError('Камера не поддерживается или недоступна');
+        }
+    }
+
+    async checkWebhookAvailability() {
+        try {
+            console.log('Checking webhook availability:', this.webhookUrl);
+            
+            // Делаем простой HEAD запрос для проверки доступности
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const response = await fetch(this.webhookUrl, {
+                method: 'HEAD',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            console.log('Webhook check response:', response.status);
+            
+        } catch (error) {
+            console.warn('Webhook availability check failed:', error.message);
+            // Не блокируем приложение, если webhook недоступен для проверки
         }
     }
 
@@ -458,10 +485,15 @@ class TelegramQRScanner {
     async processPayment() {
         if (!this.scannedData) {
             console.error('No scanned data available');
+            this.showTemporaryMessage('Нет данных для отправки');
             return;
         }
 
         try {
+            // Показываем индикатор загрузки
+            this.payBtn.disabled = true;
+            this.payBtn.textContent = 'Отправка...';
+
             // Подготавливаем данные для отправки
             const paymentPayload = {
                 qr_data: this.scannedData,
@@ -470,23 +502,36 @@ class TelegramQRScanner {
                 telegram_data: this.tg ? {
                     user: this.tg.initDataUnsafe?.user || null,
                     chat: this.tg.initDataUnsafe?.chat || null,
-                    start_param: this.tg.initDataUnsafe?.start_param || null
+                    start_param: this.tg.initDataUnsafe?.start_param || null,
+                    query_id: this.tg.initDataUnsafe?.query_id || null
                 } : null
             };
 
-            console.log('Sending payment data:', paymentPayload);
+            console.log('Sending payment data to:', this.webhookUrl);
+            console.log('Payload:', paymentPayload);
 
-            // Отправляем данные на webhook
+            // Отправляем данные на webhook с timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд timeout
+
             const response = await fetch(this.webhookUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
-                body: JSON.stringify(paymentPayload)
+                body: JSON.stringify(paymentPayload),
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
             if (response.ok) {
-                console.log('Payment data sent successfully');
+                const responseText = await response.text();
+                console.log('Response body:', responseText);
                 
                 // Отправляем haptic feedback
                 if (this.tg && this.tg.HapticFeedback) {
@@ -502,18 +547,55 @@ class TelegramQRScanner {
                 }, 1500);
                 
             } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Server error response:', errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}. ${errorText}`);
             }
 
         } catch (error) {
             console.error('Payment processing error:', error);
+            
+            // Восстанавливаем кнопку
+            this.payBtn.disabled = false;
+            this.payBtn.textContent = 'Оплатить';
             
             // Отправляем haptic feedback об ошибке
             if (this.tg && this.tg.HapticFeedback) {
                 this.tg.HapticFeedback.notificationOccurred('error');
             }
             
-            this.showTemporaryMessage('Ошибка отправки данных. Попробуйте снова.');
+            let errorMessage = 'Ошибка отправки данных';
+            
+            if (error.name === 'AbortError') {
+                errorMessage = 'Превышено время ожидания';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Ошибка сети. Проверьте подключение';
+            } else if (error.message.includes('HTTP')) {
+                errorMessage = `Ошибка сервера: ${error.message}`;
+            }
+            
+            this.showTemporaryMessage(errorMessage);
+        }
+    }
+
+    async testWebhook() {
+        console.log('Testing webhook...');
+        
+        // Временно устанавливаем тестовые данные
+        this.scannedData = 'TEST_QR_DATA_' + Date.now();
+        
+        try {
+            this.testWebhookBtn.disabled = true;
+            this.testWebhookBtn.textContent = 'Тестирование...';
+            
+            await this.processPayment();
+            
+        } catch (error) {
+            console.error('Webhook test failed:', error);
+        } finally {
+            this.testWebhookBtn.disabled = false;
+            this.testWebhookBtn.textContent = 'Тест Webhook';
+            this.scannedData = null;
         }
     }
 
