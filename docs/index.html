@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner - GitHub Pages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-primary {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+        }
+        .features {
+            margin-top: 40px;
+            text-align: left;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 8px 0;
+            opacity: 0.9;
+        }
+        .features li::before {
+            content: "✓ ";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 QR Scanner</h1>
+        <p>Современное веб-приложение для сканирования QR-кодов с использованием камеры</p>
+        
+        <div class="buttons">
+            <a href="scanner.html" class="btn btn-primary">Открыть Сканер</a>
+            <a href="test-qr.html" class="btn">Тестовые QR-коды</a>
+            <a href="https://github.com/Alfagen12/QR_ZXing" class="btn">GitHub</a>
+        </div>
+        
+        <div class="features">
+            <h3>Возможности:</h3>
+            <ul>
+                <li>Сканирование QR-кодов в реальном времени</li>
+                <li>Поддержка множественных камер</li>
+                <li>Копирование результатов в буфер обмена</li>
+                <li>История сканирования</li>
+                <li>Адаптивный дизайн</li>
+                <li>Работает без установки</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
