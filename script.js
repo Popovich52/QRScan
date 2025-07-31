@@ -63,6 +63,14 @@ class QRScanner {
             // Загружаем список камер
             await this.loadCameras();
             
+            // На мобильных устройствах автоматически запускаем камеру
+            if (this.isMobile) {
+                console.log('Mobile device detected, auto-starting camera...');
+                setTimeout(() => {
+                    this.requestCameraAndStart();
+                }, 500);
+            }
+            
         } catch (error) {
             console.error('Camera support check failed:', error);
             this.showError('Камера не поддерживается или недоступна');
@@ -149,6 +157,7 @@ class QRScanner {
             this.cameraSelect.innerHTML = '<option value="">Выберите камеру...</option>';
             
             let backCameraId = null;
+            let preferredCameraIndex = 0;
             
             devices.forEach((device, index) => {
                 const option = document.createElement('option');
@@ -156,12 +165,20 @@ class QRScanner {
                 option.text = device.label || `Камера ${index + 1}`;
                 this.cameraSelect.appendChild(option);
                 
-                // Ищем заднюю камеру (environment) для мобильных устройств
+                console.log(`Camera ${index}: ${device.label || 'Unnamed'} - ${device.deviceId.substr(0,8)}...`);
+                
+                // Ищем заднюю камеру для мобильных устройств
                 if (this.isMobile && device.label) {
                     const label = device.label.toLowerCase();
-                    if (label.includes('back') || label.includes('rear') || label.includes('environment')) {
+                    if (label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('facing back')) {
                         backCameraId = device.deviceId;
+                        console.log('Found back camera:', device.label);
                     }
+                }
+                
+                // Если нет label, но это мобильное устройство, пробуем последнюю камеру (часто задняя)
+                if (this.isMobile && !device.label && index > 0) {
+                    preferredCameraIndex = index;
                 }
             });
 
@@ -173,10 +190,16 @@ class QRScanner {
                     this.selectedDeviceId = backCameraId;
                     this.cameraSelect.value = backCameraId;
                     console.log('Selected back camera for mobile device');
+                } else if (this.isMobile && preferredCameraIndex > 0) {
+                    // Если нет явно названной задней камеры, выбираем последнюю (обычно задняя)
+                    this.selectedDeviceId = devices[preferredCameraIndex].deviceId;
+                    this.cameraSelect.value = this.selectedDeviceId;
+                    console.log('Selected preferred camera (likely back camera) for mobile device');
                 } else {
                     // Иначе выбираем первую доступную
                     this.selectedDeviceId = devices[0].deviceId;
                     this.cameraSelect.value = this.selectedDeviceId;
+                    console.log('Selected first available camera');
                 }
             }
         } catch (error) {
@@ -242,9 +265,14 @@ class QRScanner {
             scanLine = document.createElement('div');
             scanLine.id = 'scan-line';
             scanLine.className = 'scan-line';
-            this.video.parentNode.appendChild(scanLine);
+            
+            // Позиционируем полоску относительно video элемента
+            const videoContainer = this.video.parentNode;
+            videoContainer.style.position = 'relative';
+            videoContainer.appendChild(scanLine);
         }
         scanLine.style.display = 'block';
+        console.log('Scan line shown'); // Для отладки
     }
 
     hideScanLine() {
