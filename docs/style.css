@@ -58,6 +58,7 @@ main {
     padding: 25px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     text-align: center;
+    position: relative;
 }
 
 #video {
@@ -72,6 +73,56 @@ main {
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
     backface-visibility: hidden;
+    position: relative;
+}
+
+/* Полоска сканирования */
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ff00, transparent);
+    box-shadow: 0 0 10px #00ff00;
+    border-radius: 2px;
+    animation: scanAnimation 2s linear infinite;
+    z-index: 10;
+    display: none;
+}
+
+@keyframes scanAnimation {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        top: calc(100% - 2px);
+        opacity: 1;
+    }
+}
+
+/* Дополнительная анимация для video элемента */
+.scanning {
+    position: relative;
+    overflow: hidden;
+}
+
+.scanning::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid #00ff00;
+    border-radius: 12px;
+    animation: pulse 1.5s ease-in-out infinite;
+    z-index: 5;
 }
 
 .controls {
@@ -253,30 +304,23 @@ footer {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulse {
+    0% { 
+        box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+        border-color: #00ff00;
+    }
+    50% { 
+        box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
+        border-color: #00dd00;
+    }
+    100% { 
+        box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
+        border-color: #00ff00;
+    }
+}
+
 .scanner-container,
 .result-container,
 .history-container {
     animation: fadeIn 0.6s ease-out;
-}
-
-/* Индикатор сканирования */
-.scanning {
-    position: relative;
-    overflow: hidden;
-}
-
-.scanning::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #667eea, transparent);
-    animation: scan 2s linear infinite;
-}
-
-@keyframes scan {
-    0% { left: -100%; }
-    100% { left: 100%; }
 }

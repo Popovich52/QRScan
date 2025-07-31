@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Diagnostics</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Camera Diagnostics</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function runDiagnostics() {
+            const results = document.getElementById('results');
+            
+            // Test 1: HTTPS Check
+            const isHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
+            results.innerHTML += `
+                <div class="test ${isHTTPS ? 'success' : 'error'}">
+                    <strong>HTTPS Test:</strong> ${isHTTPS ? '✅ OK' : '❌ Требуется HTTPS'}
+                    <br>Current: ${location.protocol}//${location.host}
+                </div>
+            `;
+            
+            // Test 2: MediaDevices Support
+            const hasMediaDevices = !!navigator.mediaDevices?.getUserMedia;
+            results.innerHTML += `
+                <div class="test ${hasMediaDevices ? 'success' : 'error'}">
+                    <strong>MediaDevices API:</strong> ${hasMediaDevices ? '✅ Поддерживается' : '❌ Не поддерживается'}
+                </div>
+            `;
+            
+            // Test 3: User Agent
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            results.innerHTML += `
+                <div class="test ${isMobile ? 'warning' : 'success'}">
+                    <strong>Device Type:</strong> ${isMobile ? '📱 Mobile' : '💻 Desktop'}
+                    <br>User Agent: ${navigator.userAgent}
+                </div>
+            `;
+            
+            if (hasMediaDevices) {
+                try {
+                    // Test 4: Camera Permission
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: isMobile ? 'environment' : 'user' }
+                    });
+                    
+                    results.innerHTML += `
+                        <div class="test success">
+                            <strong>Camera Permission:</strong> ✅ Разрешено
+                        </div>
+                    `;
+                    
+                    // Test 5: Available Cameras
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const cameras = devices.filter(device => device.kind === 'videoinput');
+                    
+                    results.innerHTML += `
+                        <div class="test ${cameras.length > 0 ? 'success' : 'error'}">
+                            <strong>Available Cameras:</strong> ${cameras.length} найдено
+                            <ul>
+                                ${cameras.map(cam => `<li>${cam.label || 'Camera ' + cam.deviceId.substr(0,8)}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    
+                    // Stop the test stream
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                } catch (error) {
+                    results.innerHTML += `
+                        <div class="test error">
+                            <strong>Camera Error:</strong> ❌ ${error.name}
+                            <br>Message: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        runDiagnostics();
+    </script>
+</body>
+</html>

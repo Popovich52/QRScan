@@ -74,7 +74,7 @@ class QRScanner {
             // Сначала запрашиваем разрешение на камеру
             const constraints = {
                 video: {
-                    facingMode: this.isMobile ? 'environment' : 'user', // На мобильном предпочитаем заднюю камеру
+                    facingMode: this.isMobile ? { ideal: 'environment' } : 'user', // Предпочитаем заднюю камеру на мобильном
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 }
@@ -91,7 +91,29 @@ class QRScanner {
             
         } catch (error) {
             console.error('Camera permission error:', error);
-            this.handleCameraError(error);
+            
+            // Если не удалось получить заднюю камеру, пробуем любую доступную
+            if (this.isMobile && error.name === 'OverconstrainedError') {
+                try {
+                    const fallbackConstraints = {
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+                    
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    fallbackStream.getTracks().forEach(track => track.stop());
+                    
+                    await this.loadCameras();
+                    await this.startScanning();
+                    
+                } catch (fallbackError) {
+                    this.handleCameraError(fallbackError);
+                }
+            } else {
+                this.handleCameraError(error);
+            }
         }
     }
 
@@ -126,17 +148,36 @@ class QRScanner {
             const devices = await this.codeReader.listVideoInputDevices();
             this.cameraSelect.innerHTML = '<option value="">Выберите камеру...</option>';
             
+            let backCameraId = null;
+            
             devices.forEach((device, index) => {
                 const option = document.createElement('option');
                 option.value = device.deviceId;
                 option.text = device.label || `Камера ${index + 1}`;
                 this.cameraSelect.appendChild(option);
+                
+                // Ищем заднюю камеру (environment) для мобильных устройств
+                if (this.isMobile && device.label) {
+                    const label = device.label.toLowerCase();
+                    if (label.includes('back') || label.includes('rear') || label.includes('environment')) {
+                        backCameraId = device.deviceId;
+                    }
+                }
             });
 
             if (devices.length > 0) {
                 this.cameraSelect.disabled = false;
-                this.selectedDeviceId = devices[0].deviceId;
-                this.cameraSelect.value = this.selectedDeviceId;
+                
+                // Выбираем заднюю камеру на мобильных, если найдена
+                if (this.isMobile && backCameraId) {
+                    this.selectedDeviceId = backCameraId;
+                    this.cameraSelect.value = backCameraId;
+                    console.log('Selected back camera for mobile device');
+                } else {
+                    // Иначе выбираем первую доступную
+                    this.selectedDeviceId = devices[0].deviceId;
+                    this.cameraSelect.value = this.selectedDeviceId;
+                }
             }
         } catch (error) {
             console.error('Ошибка при получении списка камер:', error);
@@ -159,6 +200,7 @@ class QRScanner {
             
             // Добавляем анимацию сканирования
             this.video.classList.add('scanning');
+            this.showScanLine();
 
             // Настройки для мобильных устройств
             const hints = new Map();
@@ -193,6 +235,25 @@ class QRScanner {
         }
     }
 
+    showScanLine() {
+        // Создаем элемент полоски сканирования если его еще нет
+        let scanLine = document.getElementById('scan-line');
+        if (!scanLine) {
+            scanLine = document.createElement('div');
+            scanLine.id = 'scan-line';
+            scanLine.className = 'scan-line';
+            this.video.parentNode.appendChild(scanLine);
+        }
+        scanLine.style.display = 'block';
+    }
+
+    hideScanLine() {
+        const scanLine = document.getElementById('scan-line');
+        if (scanLine) {
+            scanLine.style.display = 'none';
+        }
+    }
+
     // Удаляем старый метод continuousScanning, так как теперь используем decodeFromVideoDevice
 
     stopScanning() {
@@ -213,6 +274,7 @@ class QRScanner {
         
         // Убираем анимацию сканирования
         this.video.classList.remove('scanning');
+        this.hideScanLine();
     }
 
     async switchCamera() {
