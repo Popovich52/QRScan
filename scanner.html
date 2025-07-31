@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>QR Code Scanner</h1>
+            <p>Сканируйте QR-коды с помощью камеры</p>
+        </header>
+
+        <main>
+            <div class="scanner-container">
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                
+                <div class="controls">
+                    <button id="startBtn" class="btn btn-primary">Запустить сканер</button>
+                    <button id="stopBtn" class="btn btn-secondary" disabled>Остановить сканер</button>
+                    <button id="switchCameraBtn" class="btn btn-secondary" disabled>Переключить камеру</button>
+                </div>
+                
+                <div class="camera-select">
+                    <label for="cameraSelect">Выберите камеру:</label>
+                    <select id="cameraSelect" disabled>
+                        <option value="">Выберите камеру...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="result-container">
+                <h3>Результат сканирования:</h3>
+                <div id="result" class="result-box">
+                    <p class="placeholder">QR-код не обнаружен</p>
+                </div>
+                <button id="copyBtn" class="btn btn-secondary" style="display: none;">Копировать</button>
+                <button id="clearBtn" class="btn btn-secondary" style="display: none;">Очистить</button>
+            </div>
+
+            <div class="history-container">
+                <h3>История сканирования:</h3>
+                <div id="history" class="history-list">
+                    <p class="placeholder">История пуста</p>
+                </div>
+                <button id="clearHistoryBtn" class="btn btn-secondary" style="display: none;">Очистить историю</button>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by ZXing JS Library</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="script.js"></script>
+</body>
+</html>
