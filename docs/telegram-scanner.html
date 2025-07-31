@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="QR Scanner для Telegram Web App">
+    
+    <!-- iOS Safari specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QR Scanner">
+    <meta name="format-detection" content="telephone=no">
+    
+    <title>QR Scanner - Telegram</title>
+    <link rel="stylesheet" href="telegram-style.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://unpkg.com/@zxing/library@latest" as="script">
+    
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Отсканируйте QR</h1>
+            <div id="https-warning" class="warning" style="display: none;">
+                ⚠️ Для работы камеры требуется HTTPS соединение
+            </div>
+        </header>
+
+        <main>
+            <div class="scanner-container">
+                <video id="video" autoplay muted playsinline webkit-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="true"></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                
+                <div class="controls">
+                    <button id="startBtn" class="btn btn-primary">Запустить сканер</button>
+                    <button id="stopBtn" class="btn btn-secondary" disabled>Закрыть</button>
+                    <button id="switchCameraBtn" class="btn btn-secondary" disabled>Переключить камеру</button>
+                </div>
+                
+                <div class="camera-select">
+                    <label for="cameraSelect">Выберите камеру:</label>
+                    <select id="cameraSelect" disabled>
+                        <option value="">Выберите камеру...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Payment Result Modal -->
+            <div id="paymentModal" class="payment-modal" style="display: none;">
+                <div class="payment-content">
+                    <h2>QR-код распознан</h2>
+                    <div id="paymentData" class="payment-data"></div>
+                    <div class="payment-buttons">
+                        <button id="payBtn" class="btn btn-success">Оплатить</button>
+                        <button id="cancelBtn" class="btn btn-secondary">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="telegram-script.js"></script>
+</body>
+</html>
