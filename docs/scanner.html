@@ -2,20 +2,28 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="QR Code Scanner - сканирование QR-кодов с помощью камеры">
     <title>QR Code Scanner</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://unpkg.com/@zxing/library@latest" as="script">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>QR Code Scanner</h1>
             <p>Сканируйте QR-коды с помощью камеры</p>
+            <div id="https-warning" class="warning" style="display: none;">
+                ⚠️ Для работы камеры требуется HTTPS соединение
+            </div>
         </header>
 
         <main>
             <div class="scanner-container">
-                <video id="video" autoplay muted playsinline></video>
+                <video id="video" autoplay muted playsinline webkit-playsinline></video>
                 <canvas id="canvas" style="display: none;"></canvas>
                 
                 <div class="controls">

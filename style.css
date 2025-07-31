@@ -34,6 +34,17 @@ header p {
     opacity: 0.9;
 }
 
+.warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
 main {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -57,6 +68,10 @@ main {
     background: #f0f0f0;
     border: 2px solid #ddd;
     object-fit: cover;
+    /* Мобильные улучшения */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .controls {

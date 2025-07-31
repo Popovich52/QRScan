@@ -5,11 +5,16 @@ class QRScanner {
         this.isScanning = false;
         this.stream = null;
         this.history = JSON.parse(localStorage.getItem('qr-history') || '[]');
+        this.isMobile = this.detectMobile();
         
         this.initializeElements();
         this.setupEventListeners();
-        this.loadCameras();
+        this.checkCameraSupport();
         this.displayHistory();
+    }
+
+    detectMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
     initializeElements() {
@@ -27,7 +32,7 @@ class QRScanner {
     }
 
     setupEventListeners() {
-        this.startBtn.addEventListener('click', () => this.startScanning());
+        this.startBtn.addEventListener('click', () => this.requestCameraAndStart());
         this.stopBtn.addEventListener('click', () => this.stopScanning());
         this.switchCameraBtn.addEventListener('click', () => this.switchCamera());
         this.cameraSelect.addEventListener('change', (e) => {
@@ -40,6 +45,80 @@ class QRScanner {
         this.copyBtn.addEventListener('click', () => this.copyResult());
         this.clearBtn.addEventListener('click', () => this.clearResult());
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
+    }
+
+    async checkCameraSupport() {
+        try {
+            // Проверяем поддержку камеры
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Camera API not supported');
+            }
+
+            // Проверяем HTTPS
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                this.showError('Камера работает только по HTTPS. Откройте сайт по защищенному соединению.');
+                return;
+            }
+
+            // Загружаем список камер
+            await this.loadCameras();
+            
+        } catch (error) {
+            console.error('Camera support check failed:', error);
+            this.showError('Камера не поддерживается или недоступна');
+        }
+    }
+
+    async requestCameraAndStart() {
+        try {
+            // Сначала запрашиваем разрешение на камеру
+            const constraints = {
+                video: {
+                    facingMode: this.isMobile ? 'environment' : 'user', // На мобильном предпочитаем заднюю камеру
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            const permissionStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            // Останавливаем тестовый поток
+            permissionStream.getTracks().forEach(track => track.stop());
+            
+            // Теперь загружаем камеры и запускаем сканирование
+            await this.loadCameras();
+            await this.startScanning();
+            
+        } catch (error) {
+            console.error('Camera permission error:', error);
+            this.handleCameraError(error);
+        }
+    }
+
+    handleCameraError(error) {
+        let message = 'Ошибка доступа к камере';
+        
+        switch (error.name) {
+            case 'NotAllowedError':
+                message = 'Доступ к камере запрещен. Разрешите использование камеры в настройках браузера.';
+                break;
+            case 'NotFoundError':
+                message = 'Камера не найдена. Убедитесь, что устройство имеет камеру.';
+                break;
+            case 'NotSupportedError':
+                message = 'Камера не поддерживается этим браузером.';
+                break;
+            case 'NotReadableError':
+                message = 'Камера используется другим приложением.';
+                break;
+            case 'OverconstrainedError':
+                message = 'Запрошенные параметры камеры не поддерживаются.';
+                break;
+            default:
+                message = `Ошибка камеры: ${error.message}`;
+        }
+        
+        this.showError(message);
     }
 
     async loadCameras() {
@@ -81,50 +160,40 @@ class QRScanner {
             // Добавляем анимацию сканирования
             this.video.classList.add('scanning');
 
-            // Запускаем сканирование
-            const result = await this.codeReader.decodeOnceFromVideoDevice(
-                this.selectedDeviceId,
-                this.video
-            );
-
-            if (result) {
-                this.handleScanResult(result.text);
+            // Настройки для мобильных устройств
+            const hints = new Map();
+            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
+            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+            
+            // Для мобильных устройств используем более агрессивные настройки
+            if (this.isMobile) {
+                hints.set(ZXing.DecodeHintType.ALSO_INVERTED, true);
             }
 
-            // Продолжаем сканирование в цикле
-            this.continuousScanning();
+            this.codeReader = new ZXing.BrowserQRCodeReader(hints);
+
+            // Запускаем непрерывное сканирование
+            this.codeReader.decodeFromVideoDevice(
+                this.selectedDeviceId,
+                this.video,
+                (result, error) => {
+                    if (result && this.isScanning) {
+                        this.handleScanResult(result.text);
+                    }
+                    if (error && error.name !== 'NotFoundException') {
+                        console.warn('Scan error:', error);
+                    }
+                }
+            );
 
         } catch (error) {
             console.error('Ошибка при запуске сканирования:', error);
-            this.showError('Не удалось запустить сканирование');
+            this.handleCameraError(error);
             this.stopScanning();
         }
     }
 
-    async continuousScanning() {
-        if (!this.isScanning) return;
-
-        try {
-            const result = await this.codeReader.decodeOnceFromVideoDevice(
-                this.selectedDeviceId,
-                this.video
-            );
-
-            if (result && this.isScanning) {
-                this.handleScanResult(result.text);
-            }
-        } catch (error) {
-            // Игнорируем ошибки "не найден QR код" и продолжаем сканирование
-            if (error.name !== 'NotFoundException') {
-                console.error('Ошибка сканирования:', error);
-            }
-        }
-
-        // Продолжаем сканирование через небольшой интервал
-        if (this.isScanning) {
-            setTimeout(() => this.continuousScanning(), 100);
-        }
-    }
+    // Удаляем старый метод continuousScanning, так как теперь используем decodeFromVideoDevice
 
     stopScanning() {
         this.isScanning = false;
@@ -294,19 +363,41 @@ class QRScanner {
     }
 }
 
-// Проверяем поддержку MediaDevices API
-if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    document.body.innerHTML = `
-        <div style="text-align: center; padding: 50px; font-family: Arial;">
-            <h2>Камера не поддерживается</h2>
-            <p>Ваш браузер не поддерживает доступ к камере.</p>
-            <p>Попробуйте использовать современный браузер или откройте страницу через HTTPS.</p>
-        </div>
-    `;
+// Проверяем поддержку MediaDevices API и HTTPS
+function checkBrowserSupport() {
+    const httpsWarning = document.getElementById('https-warning');
+    
+    // Проверяем HTTPS
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        if (httpsWarning) {
+            httpsWarning.style.display = 'block';
+        }
+        return false;
+    }
+    
+    // Проверяем поддержку MediaDevices
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.body.innerHTML = `
+            <div style="text-align: center; padding: 50px; font-family: Arial; color: white;">
+                <h2>Камера не поддерживается</h2>
+                <p>Ваш браузер не поддерживает доступ к камере.</p>
+                <p>Попробуйте использовать современный браузер (Chrome, Firefox, Safari).</p>
+                <p>На мобильных устройствах убедитесь, что сайт открыт по HTTPS.</p>
+            </div>
+        `;
+        return false;
+    }
+    
+    return true;
+}
+
+if (!checkBrowserSupport()) {
+    console.error('Browser support check failed');
 } else {
     // Инициализируем приложение после загрузки ZXing
     window.addEventListener('load', () => {
         if (typeof ZXing !== 'undefined') {
+            console.log('Initializing QR Scanner...');
             new QRScanner();
         } else {
             console.error('ZXing library не загружена');
