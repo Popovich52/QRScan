@@ -1,0 +1,27 @@
+title: QR Scanner App
+description: Simple QR code scanner using ZXing JS
+baseurl: "/QR_ZXing"
+url: "https://alfagen12.github.io"
+
+# Jekyll configuration
+markdown: kramdown
+highlighter: rouge
+theme: null
+
+# GitHub Pages configuration
+plugins:
+  - jekyll-relative-links
+
+# Exclude files from processing
+exclude:
+  - node_modules/
+  - .git/
+  - .github/
+  - package.json
+  - package-lock.json
+  - .gitignore
+  - README.md
+
+# Include files that start with underscores
+include:
+  - _config.yml
