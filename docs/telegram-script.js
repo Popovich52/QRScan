@@ -5,7 +5,7 @@ class TelegramQRScanner {
         this.isScanning = false;
         this.stream = null;
         this.isMobile = this.detectMobile();
-        this.webhookUrl = 'https://pay4kaz.space/webhook/04a25c25-4aa8-4688-b395-a1681641552b';
+        this.webhookUrl = 'https://n8n.pay4kaz.space/webhook/04a25c25-4aa8-4688-b395-a1681641552b';
         
         // Инициализируем Telegram Web App
         this.initTelegramWebApp();

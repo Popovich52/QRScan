@@ -31,7 +31,7 @@
 
 ### Endpoint:
 ```
-POST https://pay4kaz.space/webhook/04a25c25-4aa8-4688-b395-a1681641552b
+POST https://n8n.pay4kaz.space/webhook/04a25c25-4aa8-4688-b395-a1681641552b
 ```
 
 ### JSON payload:
@@ -127,7 +127,7 @@ wget https://alfagen12.github.io/QR_ZXing/telegram-script.js
 ### 2. Изменить webhook URL:
 ```javascript
 // В telegram-script.js найдите и измените:
-this.webhookUrl = 'https://your-server.com/webhook/your-token';
+this.webhookUrl = 'https://n8n.pay4kaz.space/webhook/your-token';
 ```
 
 ### 3. Настроить Telegram бота:
