@@ -1,5 +1,6 @@
 class QRScanner {
     constructor() {
+        this.version = '2.1';
         this.codeReader = new ZXing.BrowserQRCodeReader();
         this.selectedDeviceId = null;
         this.isScanning = false;
